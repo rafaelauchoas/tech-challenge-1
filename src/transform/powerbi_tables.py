@@ -38,17 +38,13 @@ def prepare_dim_sellers(sellers: pd.DataFrame) -> pd.DataFrame:
 
 def prepare_dim_geolocation(geolocation: pd.DataFrame) -> pd.DataFrame:
     df = geolocation.copy()
-
-    df = df.rename(columns={
-        "geolocation_zip_code_prefix": "zip_code_prefix",
-        "geolocation_city": "city",
-        "geolocation_state": "state",
-        "geolocation_lat": "latitude",
-        "geolocation_lng": "longitude",
-    })
-
+    df = df.groupby("geolocation_zip_code_prefix").agg(
+        city=("geolocation_city", "first"),
+        state=("geolocation_state", "first"),
+        latitude=("geolocation_lat", "mean"),
+        longitude=("geolocation_lng", "mean"),
+    ).reset_index().rename(columns={"geolocation_zip_code_prefix": "zip_code_prefix"})
     return df
-
 
 def prepare_fact_orders(orders: pd.DataFrame) -> pd.DataFrame:
     df = orders.copy()
@@ -109,8 +105,10 @@ def prepare_powerbi_tables(tables: dict[str, pd.DataFrame]) -> dict[str, pd.Data
     fact_order_items = prepare_fact_order_items(tables["order_items"])
     fact_payments = prepare_fact_payments(tables["payments"])
     fact_reviews = prepare_fact_reviews(tables["reviews"])
+    dim_date = prepare_dim_date(tables["orders"])
 
     return {
+        "dim_date": dim_date,
         "dim_customers": dim_customers,
         "dim_products": dim_products,
         "dim_sellers": dim_sellers,
@@ -120,3 +118,18 @@ def prepare_powerbi_tables(tables: dict[str, pd.DataFrame]) -> dict[str, pd.Data
         "fact_payments": fact_payments,
         "fact_reviews": fact_reviews,
     }
+
+def prepare_dim_date(orders: pd.DataFrame) -> pd.DataFrame:
+    min_date = orders["order_purchase_timestamp"].min()
+    max_date = orders["order_purchase_timestamp"].max()
+    dates = pd.date_range(min_date, max_date, freq="D")
+    return pd.DataFrame({
+        "date": dates,
+        "year": dates.year,
+        "month": dates.month,
+        "month_name": dates.strftime("%B"),
+        "quarter": dates.quarter,
+        "week": dates.isocalendar().week.astype(int),
+        "day_of_week": dates.day_name(),
+        "is_weekend": dates.dayofweek >= 5,
+    })

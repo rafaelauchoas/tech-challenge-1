@@ -2,6 +2,10 @@ import pandas as pd
 
 from src.config import RAW_DIR
 from src.utils.helpers import read_csv_safe, standardize_column_names
+from src.transform.validation_layer import validate_all_tables
+
+import logging
+log = logging.getLogger(__name__)
 
 def load_raw_tables() -> dict[str, pd.DataFrame]:
     files = {
@@ -35,9 +39,14 @@ def clean_orders(df: pd.DataFrame) -> pd.DataFrame:
         "order_delivered_customer_date",
         "order_estimated_delivery_date",
     ]
-
     for col in date_cols:
         df[col] = pd.to_datetime(df[col], errors="coerce")
+
+    # Reclassify delivered orders missing a delivery date
+    mask = (df["order_status"] == "delivered") & (df["order_delivered_customer_date"].isna())
+    df.loc[mask, "order_status"] = "delivered_no_date"
+    if mask.sum() > 0:
+        log.warning(f"clean_orders: {mask.sum()} rows reclassified as 'delivered_no_date'")
 
     df = df.drop_duplicates()
     return df
@@ -105,4 +114,5 @@ def clean_all_tables(tables: dict[str, pd.DataFrame]) -> dict[str, pd.DataFrame]
         "geolocation": clean_geolocation(tables["geolocation"]),
         "category_translation": clean_category_translation(tables["category_translation"]),
     }
+    validate_all_tables(cleaned)
     return cleaned
