@@ -1,20 +1,29 @@
 import pandas as pd
 
 from src.config import RAW_DIR
-
+from src.utils.helpers import read_csv_safe, standardize_column_names
 
 def load_raw_tables() -> dict[str, pd.DataFrame]:
-    tables = {
-        "customers": pd.read_csv(RAW_DIR / "olist_customers_dataset.csv"),
-        "orders": pd.read_csv(RAW_DIR / "olist_orders_dataset.csv"),
-        "order_items": pd.read_csv(RAW_DIR / "olist_order_items_dataset.csv"),
-        "payments": pd.read_csv(RAW_DIR / "olist_order_payments_dataset.csv"),
-        "reviews": pd.read_csv(RAW_DIR / "olist_order_reviews_dataset.csv"),
-        "products": pd.read_csv(RAW_DIR / "olist_products_dataset.csv"),
-        "sellers": pd.read_csv(RAW_DIR / "olist_sellers_dataset.csv"),
-        "geolocation": pd.read_csv(RAW_DIR / "olist_geolocation_dataset.csv"),
-        "category_translation": pd.read_csv(RAW_DIR / "product_category_name_translation.csv"),
+    files = {
+        "customers": "olist_customers_dataset.csv",
+        "orders": "olist_orders_dataset.csv",
+        "order_items": "olist_order_items_dataset.csv",
+        "payments": "olist_order_payments_dataset.csv",
+        "reviews": "olist_order_reviews_dataset.csv",
+        "products": "olist_products_dataset.csv",
+        "sellers": "olist_sellers_dataset.csv",
+        "geolocation": "olist_geolocation_dataset.csv",
+        "category_translation": "product_category_name_translation.csv",
     }
+
+    tables = {}
+    for name, filename in files.items():
+        path = RAW_DIR / filename
+        if not path.exists():
+            raise FileNotFoundError(f"Arquivo esperado não encontrado: {path}")
+        df = read_csv_safe(path)
+        tables[name] = standardize_column_names(df)
+
     return tables
 
 

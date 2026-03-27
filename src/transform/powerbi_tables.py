@@ -1,19 +1,13 @@
 import pandas as pd
 
-
 def prepare_dim_customers(customers: pd.DataFrame) -> pd.DataFrame:
     df = customers.copy()
-
-    df = df.drop_duplicates(subset=["customer_id"])
-
     df = df.rename(columns={
         "customer_zip_code_prefix": "zip_code_prefix",
         "customer_city": "city",
         "customer_state": "state",
     })
-
     return df
-
 
 def prepare_dim_products(products: pd.DataFrame, category_translation: pd.DataFrame) -> pd.DataFrame:
     df = products.copy()
@@ -32,8 +26,6 @@ def prepare_dim_products(products: pd.DataFrame, category_translation: pd.DataFr
 
 def prepare_dim_sellers(sellers: pd.DataFrame) -> pd.DataFrame:
     df = sellers.copy()
-
-    df = df.drop_duplicates(subset=["seller_id"])
 
     df = df.rename(columns={
         "seller_zip_code_prefix": "zip_code_prefix",
@@ -73,33 +65,36 @@ def prepare_fact_orders(orders: pd.DataFrame) -> pd.DataFrame:
         df["order_delivered_customer_date"] - df["order_estimated_delivery_date"]
     ).dt.days
 
+    # Delayed => Pedido entregue E chegou atrasado.
+    # Pedidos não entregues (NaN delay_days) continuam como NaN.
     df["is_delayed"] = df["delay_days"].apply(
-        lambda x: 1 if pd.notnull(x) and x > 0 else 0
+        lambda x: 1 if pd.notnull(x) and x > 0 else (0 if pd.notnull(x) else pd.NA)
     )
 
     return df
 
-
 def prepare_fact_order_items(order_items: pd.DataFrame) -> pd.DataFrame:
     df = order_items.copy()
-
     df["total_item_value"] = df["price"] + df["freight_value"]
-
-    if "shipping_limit_date" in df.columns:
-        df["shipping_limit_date"] = pd.to_datetime(df["shipping_limit_date"], errors="coerce")
-
     return df
-
 
 def prepare_fact_payments(payments: pd.DataFrame) -> pd.DataFrame:
     df = payments.copy()
-    return df
 
+    # Total value paid per order (across all payment installments)
+    df["total_order_payment"] = df.groupby("order_id")["payment_value"].transform("sum")
+
+    return df
 
 def prepare_fact_reviews(reviews: pd.DataFrame) -> pd.DataFrame:
     df = reviews.copy()
-    return df
 
+    # Flag low-score reviews for easy filtering in Power BI
+    df["is_negative_review"] = df["review_score"].apply(
+        lambda x: 1 if pd.notnull(x) and x <= 2 else 0
+    )
+
+    return df
 
 def prepare_powerbi_tables(tables: dict[str, pd.DataFrame]) -> dict[str, pd.DataFrame]:
     dim_customers = prepare_dim_customers(tables["customers"])

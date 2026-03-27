@@ -2,9 +2,7 @@ import shutil
 from pathlib import Path
 
 import kagglehub
-
 from src.config import DATASET_NAME, RAW_DIR
-
 
 def download_dataset() -> Path:
     """

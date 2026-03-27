@@ -26,6 +26,9 @@ def run_pipeline():
 
     print("Pipeline finalizado com sucesso.")
 
-
 if __name__ == "__main__":
-    run_pipeline()
+    try:
+        run_pipeline()
+    except Exception as e:
+        print(f"Pipeline falhou: {e}")
+        raise
