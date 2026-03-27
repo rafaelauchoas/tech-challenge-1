@@ -6,7 +6,6 @@ venv/
 
 data/raw/*
 data/interim/*
-data/processed/*
 
 !data/raw/.gitkeep
 !data/interim/.gitkeep
