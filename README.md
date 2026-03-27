@@ -11,3 +11,10 @@ O projeto utiliza o dataset público da Olist como fonte de dados e aplica um pi
 - limpar e padronizar as tabelas
 - enriquecer colunas relevantes para análise
 - exportar tabelas tratadas em formato ideal para modelagem no Power BI
+
+## Grupo 102
+- Amanda Cristine da Silva Gomes Queiroz
+- João Paulo Viana Melo
+- Kethellen Santana Da Silva
+- Gabrielle Tainá Inácio Oliveira
+- Rafaela Uchôas
